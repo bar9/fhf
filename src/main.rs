@@ -6,6 +6,8 @@ use chrono::Datelike;
 use git2::{Repository, Error};
 use std::fs;
 use std::io::{BufRead, BufReader, BufWriter, Write};
+use walkdir::DirEntry;
+use rayon::prelude::*;
 
 
 fn already_has_annotation(path: &Path) -> bool {
@@ -17,24 +19,28 @@ fn already_has_annotation(path: &Path) -> bool {
     }
 }
 
-fn walk_and_revwalk(repo: &Repository, path: &Path) -> Result<(), Error> {
+fn is_excluded(entry: &DirEntry) -> bool {
+    entry.file_name()
+        .to_str()
+        .map(|s| s.contains(".idea") || s.contains("node_modules") || s.contains("vendor") || s.contains("var/cache"))
+        .unwrap_or(false)
+}
 
-    for entry in walkdir::WalkDir::new(path).into_iter().filter_map(|e| e.ok()) {
-        let file_path = entry.path();
+fn process_chunk(chunk: Vec<PathBuf>) -> Result<(), Error> {
+    let repo = Repository::open(".")?;
+    for file_path in chunk {
+        let file_path= file_path.canonicalize().unwrap();
         let mut revwalk = repo.revwalk()?;
         revwalk.push_head()?;
-        if file_path.is_file()
-            && !file_path.to_str().unwrap().contains("vendor")
-            && file_path.extension().map_or(false, |e| e == "php")
-            && !already_has_annotation(file_path) {
-            println!("processing {:?}", &file_path);
+        if !already_has_annotation(&file_path) {
+            // println!("processing {:?}", &file_path);
             revwalk.set_sorting(git2::Sort::TIME | git2::Sort::REVERSE)?;
             for oid in revwalk {
                 let commit_id = oid?;
                 let commit = repo.find_commit(commit_id)?;
 
                 let tree = commit.tree()?;
-                let file_entry = tree.get_path(file_path.strip_prefix(repo.workdir().unwrap()).unwrap());
+                let file_entry = tree.get_path(&file_path.strip_prefix(repo.workdir().unwrap()).unwrap());
 
                 if let Ok(_) = file_entry {
                     let commit_author = commit.author();
@@ -50,24 +56,44 @@ fn walk_and_revwalk(repo: &Repository, path: &Path) -> Result<(), Error> {
                         " *",
                         &date_line,
                         " */",
-                        ""
+                        "",
                     ];
-                    add_lines_after_position(file_path, 0, &lines);
+                    add_lines_after_position(&file_path, 0, &lines);
                     break;
                 }
             }
         }
     }
-
     Ok(())
 }
 
-fn main() -> Result<(), Error> {
-    let repo = Repository::open(".")?;
-    let workdir = repo.workdir().unwrap();
-    let root_path = workdir;
+fn walk_dir(path: &Path) -> Result<Vec<PathBuf>, Error> {
+    Ok(
+        walkdir::WalkDir::new(path).into_iter()
+            .filter_entry(|e| !is_excluded(e))
+            .filter_map(|e| e.ok())
+            .filter(|entry| entry.path().extension().map_or(false, |ext| ext == "php"))
+            .map(|e| e.into_path())
+            .collect()
+    )
+    //
+    // {
+    // }
+    //
+    // Ok(())
+}
 
-    walk_and_revwalk(&repo, &root_path)?;
+fn main() -> Result<(), Error> {
+    let root_path = Path::new(".");
+
+    let paths = walk_dir(root_path)?;
+
+    let chunk_size = 250;
+    let path_chunks: Vec<_> = paths.chunks(chunk_size).collect();
+
+    path_chunks.par_iter().for_each(|chunk| {
+        process_chunk(chunk.to_vec()).expect("processing chunk failed");
+    });
 
     Ok(())
 }
