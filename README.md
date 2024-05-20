@@ -1,45 +1,51 @@
+# File Header Filler (from git history)
+
+## Overview
+For a code repository, this automatically adds file headers to PHP code
+files based on author and company information 
+extracted from Git history. 
+This tool streamlines the process of ensuring that each PHP code file 
+contains the necessary header information for 
+legal compliance and accountability purposes.
+
+Note: Currently, File Header Filler only supports PHP files.
+
+## Installation
+To install File Header Filler, you can use the following script:
+```bash
+curl -LSfs https://japaric.github.io/trust/install.sh | sh -s -- --git bar9/fhf
+```
+
+This script will download and install File Header Filler from the specified
+Git repository (bar9/fhf).
+Ensure that you have appropriate permissions to execute scripts from the web.
+
+## Example Header
+An example header added by File Header Filler looks like this:
+```php
+/**
+* @author Roland Brand / acme inc.
+*
+* @since 04/2024
+*/
+```
+
+## Example Usage
+To utilize File Header Filler, you can use the following command-line syntax:
+
+```bash
+fhf --path . --extension php --suffix 'acme inc.' --ignore node_modules,vendor,.idea,bin
+```
+
+This command will search for PHP code files within the specified path
+(`.` denotes the current directory)
+and add the file header information with the suffix "acme inc."
+The tool will ignore specified directories such as node_modules, vendor, .idea, and bin.
+
+Note: File Header Filler only adds headers to files that do not have a block comment at the start of the file.
 
 
+Note: Always review and verify the changes made by File Header Filler
+to ensure compliance 
+with your organization's policies and legal requirements.
 
-`find . -type f -name "*.php" ! -path "*vendor*" ! -path "*node_modules*" ! -path "*.idea*" -exec sh -c 'echo -n "{}: "; git log --format=%H --reverse -- {} | head -n 1' \;`
-
-real    1m1.464s
-
-`fhf`
-
-real    0m37.531s
-
-just walkdir (single threaded)
-real    0m3.903s
-
-exclude vendor, node_module, .idea, var/cache, just printing out paths of all php files
-real    0m0.099s
-
-recap: find . -type f -name "*.php"
-real    0m1.332s
-
-`fhf after excludes`
-
-real    0m32.647s
-
-parallel 100
-
-real    0m24.437s
-
-parallel 8
-real    0m33.435s
-
-parallel 200
-real    0m12.829s
-
-parallel 1000
-real    0m29.025s
-
-parallel 500
-real    0m11.961s
-
-vor sortieren:
-real    0m12.634s
-
-nach sortieren
-real    0m14.086s

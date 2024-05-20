@@ -21,8 +21,11 @@ struct Args {
 
     /// Suffix to name (e.g. company name)
     #[arg(short, long)]
-    suffix: String
+    suffix: String,
 
+    /// Directories to exclude
+    #[arg(short, long, value_delimiter(','))]
+    ignore: Vec<String>
 }
 
 fn main() -> Result<()> {
@@ -34,8 +37,10 @@ fn main() -> Result<()> {
 
     let root_path = Path::new(&args.path);
     let suffix = args.suffix;
+    let ignore = args.ignore;
+    println!{"{:?}", ignore};
 
-    let paths = walk_dir(root_path, &args.extension)?;
+    let paths = walk_dir(root_path, &args.extension, &ignore)?;
 
     let chunk_size = 250;
     let path_chunks: Vec<_> = paths.chunks(chunk_size).collect();

@@ -16,10 +16,10 @@ pub fn already_has_annotation(path: &Path) -> bool {
     }
 }
 
-pub fn is_excluded(entry: &DirEntry) -> bool {
+pub fn is_excluded(entry: &DirEntry, ignore: &Vec<String>) -> bool {
     entry.file_name()
         .to_str()
-        .map(|s| s.contains(".idea") || s.contains("node_modules") || s.contains("vendor") || s.contains("var/cache"))
+        .map(|s| ignore.iter().any(|i| s.contains(i)))
         .unwrap_or(false)
 }
 
@@ -31,7 +31,6 @@ pub fn process_chunk(chunk: Vec<PathBuf>, root_path: &Path, suffix: &String) -> 
         let mut revwalk = repo.revwalk()?;
         revwalk.push_head()?;
         if !already_has_annotation(&file_path) {
-            // println!("processing {:?}", &file_path);
             revwalk.set_sorting(git2::Sort::TIME | git2::Sort::REVERSE)?;
             for oid in revwalk {
                 let commit_id = oid?;
@@ -66,10 +65,10 @@ pub fn process_chunk(chunk: Vec<PathBuf>, root_path: &Path, suffix: &String) -> 
     Ok(())
 }
 
-pub fn walk_dir(path: &Path, extension: &str) -> Result<Vec<PathBuf>, Error> {
+pub fn walk_dir(path: &Path, extension: &str, ignore: &Vec<String>) -> Result<Vec<PathBuf>, Error> {
     Ok(
         walkdir::WalkDir::new(path).into_iter()
-            .filter_entry(|e| !is_excluded(e))
+            .filter_entry(|e| !is_excluded(e, ignore))
             .filter_map(|e| e.ok())
             .filter(|entry| entry.path().extension().map_or(false, |ext| ext == extension))
             .map(|e| e.into_path())
