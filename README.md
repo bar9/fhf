@@ -15,7 +15,7 @@ Currently, the only way to install fhf is to build it from source.
 
 To install File Header Filler, you can use the following script:
 ```bash
-cargo install --git bar9/fhf
+cargo install --git https://github.com/bar9/fhf
 ```
 
 ## Example Header
