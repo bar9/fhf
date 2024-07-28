@@ -11,14 +11,12 @@ legal compliance and accountability purposes.
 Note: Currently, File Header Filler only supports PHP files.
 
 ## Installation
+Currently, the only way to install fhf is to build it from source.
+
 To install File Header Filler, you can use the following script:
 ```bash
-curl -LSfs https://japaric.github.io/trust/install.sh | sh -s -- --git bar9/fhf
+cargo install --git https://github.com/bar9/fhf
 ```
-
-This script will download and install File Header Filler from the specified
-Git repository (bar9/fhf).
-Ensure that you have appropriate permissions to execute scripts from the web.
 
 ## Example Header
 An example header added by File Header Filler looks like this:
